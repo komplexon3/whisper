@@ -67,7 +67,7 @@ def transcribe(
 
     Returns
     -------
-    A dictionary containing the resulting text ("text") and segment-level details ("segments"), and
+    A dictionary containing the resulting text ("text") and segment-level details ("segments"), sentences ("sentences"), and
     the spoken language ("language"), which is detected when `decode_options["language"]` is None.
     """
     dtype = torch.float16 if decode_options.get("fp16", True) else torch.float32
@@ -137,6 +137,7 @@ def transcribe(
     )  # time per output token: 0.02 (seconds)
     all_tokens = []
     all_segments = []
+    all_sentences = []
     prompt_reset_since = 0
 
     initial_prompt = decode_options.pop("initial_prompt", None) or []
@@ -151,6 +152,7 @@ def transcribe(
         if len(text.strip()) == 0:  # skip empty text output
             return
 
+        print(len(all_segments))
         all_segments.append(
             {
                 "id": len(all_segments),
@@ -167,6 +169,23 @@ def transcribe(
         )
         if verbose:
             print(f"[{format_timestamp(start)} --> {format_timestamp(end)}] {text}")
+
+    def segments_to_sentences(segments): 
+        sentence_start_segment = 0
+        sentence = ""
+        for ind, segment in enumerate(segments):
+            sentence += segment["text"]
+            if segment['text'][-1] in [".", "!", "?"]:
+                all_sentences.append(
+                    {
+                        'id': len(all_sentences),
+                        'start': segments[sentence_start_segment]['start'],
+                        'end': segment['end'],
+                        'text':  sentence
+                    }
+                )
+                sentence = ""
+                sentence_start_segment = ind + 1
 
     # show the progress bar when verbose is False (otherwise the transcribed text will be printed)
     num_frames = mel.shape[-1]
@@ -244,7 +263,10 @@ def transcribe(
             pbar.update(min(num_frames, seek) - previous_seek_value)
             previous_seek_value = seek
 
-    return dict(text=tokenizer.decode(all_tokens[len(initial_prompt):]), segments=all_segments, language=language)
+    # combine segments into sentences
+    segments_to_sentences(all_segments)
+
+    return dict(text=tokenizer.decode(all_tokens[len(initial_prompt):]), segments=all_segments, sentences=all_sentences, language=language)
 
 
 def cli():
@@ -308,6 +330,10 @@ def cli():
         # save protocol
         with open(os.path.join(output_dir, audio_basename + ".protocol.txt"), "w", encoding="utf-8") as txt:
             write_protocol(result["segments"], file=txt)
+
+        # save sentences protocol
+        with open(os.path.join(output_dir, audio_basename + ".sentences-protocol.txt"), "w", encoding="utf-8") as txt:
+            write_protocol(result["sentences"], file=txt)
 
         # save VTT
         with open(os.path.join(output_dir, audio_basename + ".vtt"), "w", encoding="utf-8") as vtt:
