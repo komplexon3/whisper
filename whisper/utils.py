@@ -54,6 +54,15 @@ def write_protocol(transcript: Iterator[dict], file: TextIO):
             flush=True,
         )
 
+def write_protocol2(transcript: Iterator[dict], file: TextIO):
+    for segment in transcript:
+        print(
+            f"{format_timestamp(segment['start'])}\n"
+            f"{segment['text']}",
+            file=file,
+            flush=True,
+        )
+
 def write_txt(transcript: Iterator[dict], file: TextIO):
     for segment in transcript:
         print(segment['text'].strip(), file=file, flush=True)

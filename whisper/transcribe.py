@@ -10,7 +10,7 @@ import tqdm
 from .audio import SAMPLE_RATE, N_FRAMES, HOP_LENGTH, pad_or_trim, log_mel_spectrogram
 from .decoding import DecodingOptions, DecodingResult
 from .tokenizer import LANGUAGES, TO_LANGUAGE_CODE, get_tokenizer
-from .utils import exact_div, format_timestamp, optional_int, optional_float, str2bool, write_txt, write_vtt, write_srt, write_protocol
+from .utils import exact_div, format_timestamp, optional_int, optional_float, str2bool, write_txt, write_vtt, write_srt, write_protocol, write_protocol2
 
 if TYPE_CHECKING:
     from .model import Whisper
@@ -152,7 +152,6 @@ def transcribe(
         if len(text.strip()) == 0:  # skip empty text output
             return
 
-        print(len(all_segments))
         all_segments.append(
             {
                 "id": len(all_segments),
@@ -334,6 +333,10 @@ def cli():
         # save sentences protocol
         with open(os.path.join(output_dir, audio_basename + ".sentences-protocol.txt"), "w", encoding="utf-8") as txt:
             write_protocol(result["sentences"], file=txt)
+
+        # save sentences protocol2
+        with open(os.path.join(output_dir, audio_basename + ".sentences-protocol-2.txt"), "w", encoding="utf-8") as txt:
+            write_protocol2(result["sentences"], file=txt)
 
         # save VTT
         with open(os.path.join(output_dir, audio_basename + ".vtt"), "w", encoding="utf-8") as vtt:
