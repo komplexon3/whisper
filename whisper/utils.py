@@ -44,6 +44,16 @@ def format_timestamp(seconds: float, always_include_hours: bool = False):
     return f"{hours_marker}{minutes:02d}:{seconds:02d}.{milliseconds:03d}"
 
 
+def write_protocol(transcript: Iterator[dict], file: TextIO):
+    for segment in transcript:
+        print(
+            f"{format_timestamp(segment['start'])}"
+            " -- "
+            f"{segment['text']}",
+            file=file,
+            flush=True,
+        )
+
 def write_txt(transcript: Iterator[dict], file: TextIO):
     for segment in transcript:
         print(segment['text'].strip(), file=file, flush=True)
